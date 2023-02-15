@@ -1,0 +1,19 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: tests-workload-network
+  namespace: default
+spec:
+ pipelineSpec:
+   tasks:
+     - name: network-workload
+       taskSpec:
+         metadata:
+           labels:
+             app: "example"
+         steps:
+           - name: echo
+             image: image-registry.openshift-image-registry.svc:5000/openshift/httpd
+             script: |
+              #!/usr/bin/env bash
+              curl https://speed.hetzner.de/1GB.bin

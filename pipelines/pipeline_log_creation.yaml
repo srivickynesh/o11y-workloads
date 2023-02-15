@@ -1,0 +1,33 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: tests-workload-log-generation
+  namespace: default
+  labels:
+    pipelines.appstudio.openshift.io/type: test
+    pipelines.appstudio.openshift.io/workspace_id: "12345678"
+    pipelines.appstudio.openshift.io/workspace_name: "ws_1"
+spec:
+  pipelineSpec:
+    tasks:
+      - name: log-generation
+        taskSpec:
+          metadata:
+            labels:
+              app: "example"
+          steps:
+            - name: generate-log
+              image: quay.io/redhat-appstudio/hacbs-test:latest
+              script: |
+                #!/usr/bin/env bash
+                echo "Starting LOG Generation!"
+                head -c 1G < /dev/urandom > /project/repository/random-data.log || exit 1
+                echo "Log Generation complete"
+                ls -lh /project/repository/random-data.log
+              resources:
+                requests:
+                  memory: 1Gi
+                  cpu: 500m
+                limits:
+                  memory: 2Gi
+                  cpu: 4000m
