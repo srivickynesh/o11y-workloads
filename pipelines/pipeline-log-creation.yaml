@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  name: tests-workload-log-generation
+  name: tests
   namespace: default
   labels:
     pipelines.appstudio.openshift.io/type: test
@@ -17,13 +17,17 @@ spec:
               app: "example"
           steps:
             - name: generate-log
-              image: quay.io/redhat-appstudio/hacbs-test:latest
+              image: registry.access.redhat.com/ubi9/ubi
               script: |
-                #!/usr/bin/env bash
+                mkdir -p /tests
                 echo "Starting LOG Generation!"
-                head -c 1G < /dev/urandom > /project/repository/random-data.log || exit 1
-                echo "Log Generation complete"
-                ls -lh /project/repository/random-data.log
+                head -c 1G < /dev/urandom > /tests/random-data.log || exit 1
+                if [ ! -f /tests/random-data.log ]; then
+                  echo "File Not Found"
+                  exit 1
+                fi
+                ls -lh /tests/random-data.log
+                echo "Log Generation completed"
               resources:
                 requests:
                   memory: 1Gi

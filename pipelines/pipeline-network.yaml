@@ -1,0 +1,48 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: tests
+  namespace: default
+spec:
+  pipelineSpec:
+    tasks:
+      - name: network-workloads
+        taskSpec:
+          metadata:
+            labels:
+              app: "example"
+          steps:
+            - name: network-tests
+              image: registry.access.redhat.com/ubi9/ubi
+              script: |
+                #!/usr/bin/env bash
+                mkdir -p /tests
+                head -c 95M < /dev/urandom > /tests/random-upload_data.log || exit 1
+                if [ ! -f /tests/random-upload_data.log ]; then
+                    echo "Log Generation Failed"
+                    exit 1
+                fi
+                echo "Uploading"
+                curl --limit-rate 1M -F "file=@/tests/random-upload_data.log" https://tmpfiles.org/api/v1/upload
+                if [ $? -eq 0 ]; then 
+                    echo "Success" 
+                else 
+                    echo "Failure $?"
+                    exit 1
+                fi
+                echo "Upload Successful"
+                echo "----------------------------------------------------------------"
+                echo "Starting Download"
+                curl --limit-rate 1M -o /tests/network.bin https://speed.hetzner.de/1GB.bin
+                if [ $? -eq 0 ]; then 
+                    echo "Success" 
+                else 
+                    echo "Failure $?"
+                    exit 1
+                fi
+                if [ ! -f /tests/network.bin ]; then
+                    echo "File Not Found"
+                    exit 1
+                fi
+                ls -lh /tests/network.bin
+                echo "Download Complete"
