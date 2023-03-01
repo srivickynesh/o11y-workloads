@@ -1,48 +1,124 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  name: tests
+  generateName: network-pipeline-
   namespace: default
+  labels:
+   pipelines.appstudio.openshift.io/type: release
 spec:
   pipelineSpec:
     tasks:
-      - name: network-workloads
+      - name: download-1gb
         taskSpec:
           metadata:
             labels:
-              app: "example"
+              app: "download-1gb"
           steps:
-            - name: network-tests
+            - name: download-1gb
               image: registry.access.redhat.com/ubi9/ubi
               script: |
                 #!/usr/bin/env bash
-                mkdir -p /tests
-                head -c 95M < /dev/urandom > /tests/random-upload_data.log || exit 1
-                if [ ! -f /tests/random-upload_data.log ]; then
+                mkdir /tests
+                curl -o /tests/network-1G.bin https://speed.hetzner.de/1GB.bin
+                if [ $? -eq 0 ]; then
+                    echo "Success"
+                else
+                    echo "Failure $?"
+                    exit 1
+                fi
+                if [ ! -f /tests/network-1G.bin ]; then
+                    echo "File Not Found"
+                    exit 1
+                fi
+      - name: download-100mb
+        taskSpec:
+          metadata:
+            labels:
+              app: "download-100mb"
+          steps:
+            - name: download-100mb
+              image: registry.access.redhat.com/ubi9/ubi
+              script: |
+                #!/usr/bin/env bash
+                mkdir /tests
+                curl -o /tests/network-100M.bin https://speed.hetzner.de/100MB.bin
+                if [ $? -eq 0 ]; then
+                    echo "Success"
+                else
+                    echo "Failure $?"
+                    exit 1
+                fi
+                if [ ! -f /tests/network-100M.bin ]; then
+                    echo "File Not Found"
+                    exit 1
+                fi
+      - name: download-200mb
+        taskSpec:
+          metadata:
+            labels:
+              app: "download-200mb"
+          steps:
+            - name: download-200mb
+              image: registry.access.redhat.com/ubi9/ubi
+              script: |
+                #!/usr/bin/env bash
+                mkdir /tests
+                curl -o /tests/network-200M.bin http://ipv4.download.thinkbroadband.com/200MB.zip
+                if [ $? -eq 0 ]; then
+                    echo "Success"
+                else
+                    echo "Failure $?"
+                    exit 1
+                fi
+                if [ ! -f /tests/network-200M.bin ]; then
+                    echo "File Not Found"
+                    exit 1
+                fi
+      - name: upload-95mb
+        taskSpec:
+          metadata:
+            labels:
+              app: "upload-95mb"
+          steps:
+            - name: upload-95mb
+              image: registry.access.redhat.com/ubi9/ubi
+              script: |
+                #!/usr/bin/env bash
+                mkdir /tests
+                head -c 95M < /dev/urandom > /tests/random-upload-95.log || exit 1
+                if [ ! -f /tests/random-upload-95.log ]; then
                     echo "Log Generation Failed"
                     exit 1
                 fi
                 echo "Uploading"
-                curl --limit-rate 1M -F "file=@/tests/random-upload_data.log" https://tmpfiles.org/api/v1/upload
-                if [ $? -eq 0 ]; then 
-                    echo "Success" 
-                else 
+                curl -F "file=@/tests/random-upload-95.log" https://tmpfiles.org/api/v1/upload
+                if [ $? -eq 0 ]; then
+                    echo "Success"
+                else
                     echo "Failure $?"
                     exit 1
                 fi
-                echo "Upload Successful"
-                echo "----------------------------------------------------------------"
-                echo "Starting Download"
-                curl --limit-rate 1M -o /tests/network.bin https://speed.hetzner.de/1GB.bin
-                if [ $? -eq 0 ]; then 
-                    echo "Success" 
-                else 
+      - name: upload-50mb
+        taskSpec:
+          metadata:
+            labels:
+              app: "upload-50mb"
+          steps:
+            - name: upload-50mb
+              image: registry.access.redhat.com/ubi9/ubi
+              script: |
+                #!/usr/bin/env bash
+                mkdir /tests
+                head -c 50M < /dev/urandom > /tests/random-upload-50.log || exit 1
+                if [ ! -f /tests/random-upload-95.log ]; then
+                    echo "Log Generation Failed"
+                    exit 1
+                fi
+                echo "Uploading"
+                curl -F "file=@/tests/random-upload-50.log" https://tmpfiles.org/api/v1/upload
+                if [ $? -eq 0 ]; then
+                    echo "Success"
+                else
                     echo "Failure $?"
                     exit 1
                 fi
-                if [ ! -f /tests/network.bin ]; then
-                    echo "File Not Found"
-                    exit 1
-                fi
-                ls -lh /tests/network.bin
-                echo "Download Complete"
