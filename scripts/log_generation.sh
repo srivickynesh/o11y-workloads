@@ -14,14 +14,15 @@ if [ -f ../pipelines/pipeline-simple.yaml ]  ; then
   sleep 10
 fi
 
-for i in {1..15}
-do 
-    oc logs test-pipeline-simple-log-generation-pod -c step-generate-random-echo >> test.log
-    if [ ! -f test.log ]; then
-        echo "File Not Found"
-        exit 1
-    fi
-    # Print log size
+if [ ! -f test.log ]; then
+    nohup oc logs -f test-pipeline-simple-log-generation-pod -c step-generate-random-echo > test.log 2>&1 &
+else
+    rm -rf test.log
+    nohup oc logs -f test-pipeline-simple-log-generation-pod -c step-generate-random-echo > test.log 2>&1 &
+fi
+for i in {1..25}
+do
+    # Prints log size
     echo "Current Log Size is : `ls -l test.log | awk '{print $5}'`"
     if [ $? -ne 0 ]; then
         echo "Failure $?"
