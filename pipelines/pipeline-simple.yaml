@@ -19,4 +19,8 @@ spec:
               image: registry.access.redhat.com/ubi9/ubi
               script: |
                 #!/usr/bin/env bash
-                cat /dev/urandom | tr -dc '[:alpha:]' | fold -w ${1:-20} | head -n 5
+                for i in {1..10}
+                do
+                  cat /dev/urandom | tr -dc '[:alpha:]' | fold -w ${1:-20} | head -n 5
+                  sleep 2m
+                done

@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test-resource
+spec: {}
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: cpu-resource-constraint
+  namespace: test-resource
+spec:
+  limits:
+  - default: # Default
+      cpu: 400m
+    defaultRequest: # Default
+      cpu: 400m
+    type: Container
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+ generateName: test-pipeline-
+ namespace: test-resource
+ labels:
+   pipelines.appstudio.openshift.io/type: test
+spec:
+ pipelineSpec:
+   tasks:
+      - name: container-resource-constraint-no-conflict
+        taskSpec:
+          metadata:
+            labels:
+              app: "resource-constraint"
+          steps:
+            - name: resource-constraint
+              image: registry.access.redhat.com/ubi9/ubi
+              script: |
+                #!/usr/bin/env bash
+                echo "Hola, Amigo!"
+                sleep 2m
+              resources:
+                requests:
+                  memory: 1Gi
+                  cpu: 400m
+                limits:
+                  memory: 2Gi
+                  cpu: 400m
+      - name: download-200mb
+        taskSpec:
+          metadata:
+            labels:
+              app: "download-200mb"
+          steps:
+            - name: download-200mb
+              image: registry.access.redhat.com/ubi9/ubi
+              script: |
+                #!/usr/bin/env bash
+                mkdir /tests
+                curl -o /tests/network-200M.bin http://ipv4.download.thinkbroadband.com/200MB.zip
+                if [ $? -eq 0 ]; then
+                    echo "Success"
+                else
+                    echo "Failure $?"
+                    exit 1
+                fi
+                if [ ! -f /tests/network-200M.bin ]; then
+                    echo "File Not Found"
+                    exit 1
+                fi
+              resources:
+                requests:
+                  memory: 1Gi
+                  cpu: 400m
+                limits:
+                  memory: 2Gi
+                  cpu: 400m
