@@ -2,18 +2,18 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
- name: test-pipeline-simple
- namespace: test
- labels:
-   pipelines.appstudio.openshift.io/type: test
+  name: test-pipeline-simple
+  namespace: test
+  labels:
+    pipelines.appstudio.openshift.io/type: test
 spec:
- pipelineSpec:
-   tasks:
+  pipelineSpec:
+    tasks:
       - name: log-generation
         taskSpec:
           metadata:
             labels:
-              app: "simple-log"
+              app: simple-log
           steps:
             - name: generate-random-echo
               image: registry.access.redhat.com/ubi9/ubi

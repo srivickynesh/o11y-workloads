@@ -36,6 +36,7 @@ spec:
                     echo "File Not Found"
                     exit 1
                 fi
+                sleep 2m
       - name: download-100mb
         taskSpec:
           metadata:
@@ -58,6 +59,7 @@ spec:
                     echo "File Not Found"
                     exit 1
                 fi
+                sleep 2m
       - name: download-200mb
         taskSpec:
           metadata:
@@ -80,6 +82,7 @@ spec:
                     echo "File Not Found"
                     exit 1
                 fi
+                sleep 2m
       - name: upload-50mb
         taskSpec:
           metadata:
@@ -97,13 +100,14 @@ spec:
                     exit 1
                 fi
                 echo "Uploading"
-                curl -F "file=@/tests/random-upload-50.log" https://tmpfiles.org/api/v1/upload
+                curl --limit-rate 1M -F "file=@/tests/random-upload-50.log" https://tmpfiles.org/api/v1/upload
                 if [ $? -eq 0 ]; then
                     echo "Success"
                 else
                     echo "Failure $?"
                     exit 1
                 fi
+                sleep 2m
       - name: upload-95mb
         taskSpec:
           metadata:
@@ -121,10 +125,11 @@ spec:
                     exit 1
                 fi
                 echo "Uploading"
-                curl -F "file=@/tests/random-upload-95.log" https://tmpfiles.org/api/v1/upload
+                curl --limit-rate 1M -F "file=@/tests/random-upload-95.log" https://tmpfiles.org/api/v1/upload
                 if [ $? -eq 0 ]; then
                     echo "Success"
                 else
                     echo "Failure $?"
                     exit 1
                 fi
+                sleep 2m
