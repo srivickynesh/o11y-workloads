@@ -1,0 +1,74 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: pipeline-egress-
+  namespace: test
+  labels:
+    pipelines.appstudio.openshift.io/type: test
+spec:
+  pipelineSpec:
+    tasks:
+      - name: upload-50mb
+        taskSpec:
+          metadata:
+            labels:
+              app: upload-50mb
+          steps:
+            - name: upload-50mb
+              image: registry.access.redhat.com/ubi9/ubi
+              script: >
+                #!/usr/bin/env bash
+
+                mkdir /tests
+
+                head -c 50M < /dev/urandom > /tests/random-upload-50.log || exit 1
+
+                if [ ! -f /tests/random-upload-50.log ]; then
+                    echo "User workload Generation Failed"
+                    exit 1
+                fi
+
+                echo "Uploading"
+
+                curl --limit-rate 1M -F "file=@/tests/random-upload-50.log" https://tmpfiles.org/api/v1/upload
+
+                if [ $? -eq 0 ]; then
+                    echo "Success"
+                else
+                    echo "Failure $?"
+                    exit 1
+                fi
+
+                sleep 2m
+      - name: upload-95mb
+        taskSpec:
+          metadata:
+            labels:
+              app: upload-95mb
+          steps:
+            - name: upload-95mb
+              image: registry.access.redhat.com/ubi9/ubi
+              script: >
+                #!/usr/bin/env bash
+
+                mkdir /tests
+
+                head -c 95M < /dev/urandom > /tests/random-upload-95.log || exit 1
+
+                if [ ! -f /tests/random-upload-95.log ]; then
+                    echo "User workload Generation Failed"
+                    exit 1
+                fi
+
+                echo "Uploading"
+
+                curl --limit-rate 1M -F "file=@/tests/random-upload-95.log" https://tmpfiles.org/api/v1/upload
+
+                if [ $? -eq 0 ]; then
+                    echo "Success"
+                else
+                    echo "Failure $?"
+                    exit 1
+                fi
+
+                sleep 2m

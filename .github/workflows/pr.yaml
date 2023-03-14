@@ -1,0 +1,16 @@
+name: Validate PRs
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  YAML-Linter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: yaml-lint
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          file_or_dir: .

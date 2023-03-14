@@ -1,0 +1,66 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: pipeline-expose-service-
+  namespace: test
+  labels:
+    pipelines.appstudio.openshift.io/type: test
+spec:
+  pipelineSpec:
+    tasks:
+      - name: exposed-app-egress
+        taskSpec:
+          metadata:
+            labels:
+              app: exposed-app-egress
+          steps:
+            - name: exposed-app-egress
+              image: registry.access.redhat.com/ubi9/ubi
+              script: |
+                #!/usr/bin/env bash
+                echo "Hola, Amigo!"
+                sleep 5m
+              ports:
+                - containerPort: 80
+                  name: http
+                  protocol: TCP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: expose-service-egress
+  namespace: test
+spec:
+  selector:
+    app: expose-service-egress
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: curl-egress-
+  namespace: test
+  labels:
+    pipelines.appstudio.openshift.io/type: test
+spec:
+  pipelineSpec:
+    tasks:
+      - name: curl-egress
+        taskSpec:
+          metadata:
+            labels:
+              app: curl-egress
+          steps:
+            - name: curl-egress
+              image: registry.access.redhat.com/ubi9/ubi
+              script: |
+                #!/usr/bin/env bash
+                for i in $(seq 1 5); do curl expose-service-egress:80; done
+                sleep 3m

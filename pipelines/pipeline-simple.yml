@@ -1,8 +1,7 @@
----
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  name: test-pipeline-simple
+  name: pipeline-simple
   namespace: test
   labels:
     pipelines.appstudio.openshift.io/type: test
@@ -17,9 +16,11 @@ spec:
           steps:
             - name: generate-random-echo
               image: registry.access.redhat.com/ubi9/ubi
-              script: |
+              script: >
                 #!/usr/bin/env bash
+
                 for i in {1..10}
+
                 do
                   cat /dev/urandom | tr -dc '[:alpha:]' | fold -w ${1:-20} | head -n 5
                   sleep 2m
