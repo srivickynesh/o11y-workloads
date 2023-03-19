@@ -2,7 +2,7 @@ apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
   generateName: pipeline-egress-
-  namespace: test
+  namespace: o11y-e2e-tenant
   labels:
     pipelines.appstudio.openshift.io/type: test
 spec:

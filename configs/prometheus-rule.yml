@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    openshift.io/prometheus-rule-evaluation-scope: leaf-prometheus
+
+  name: o11y-example-rule
+spec:
+  groups:
+  - name: stonesoup-metering
+    interval: 30s
+    rules:
+      - record: appstudio_container_network_transmit_bytes_total
+        expr: |
+          container_network_transmit_bytes_total
+          * on (namespace, pod)
+          group_left (label_pipelines_appstudio_openshift_io_type)
+          kube_pod_labels
