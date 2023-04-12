@@ -1,0 +1,55 @@
+# Use Quayusername and Quaytoken instead of {username}:{password} to push images to quay
+# Update {Quay-Organization} in line 23 to respective Org.
+# oc create -f egress-pipelinerun.yml
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: pull-and-push-image
+  labels:
+    app: pull-and-push-image
+spec:
+  stepTemplate:
+    env:
+    - name: BUILDAH_FORMAT
+      value: oci
+    - name: STORAGE_DRIVER
+      value: vfs
+  steps:
+    - name: pull-and-push-image
+      image: quay.io/redhat-appstudio/buildah:v1.28
+      script: |
+        #!/bin/sh
+        # authFilePath="/tekton/creds-secrets/o11y-tests-token/.dockerconfigjson"
+        destImageRef="quay.io/{Quay-Organization}/o11y-workloads"
+        # Set Permissions
+        sed -i 's/^\s*short-name-mode\s*=\s*.*/short-name-mode = "disabled"/' /etc/containers/registries.conf
+        echo 'root:1:4294967294' | tee -a /etc/subuid >> /etc/subgid
+        # Pull Image
+        echo -e "FROM quay.io/libpod/alpine:latest\nRUN dd if=/dev/urandom of=/100mbfile bs=1M count=100" > Dockerfile
+        unshare -Ufp --keep-caps -r --map-users 1,1,65536 --map-groups 1,1,65536 -- buildah bud --tls-verify=false --no-cache -f ./Dockerfile -t "$destImageRef" .
+        IMAGE_SHA_DIGEST=$(buildah images --digests | grep ${destImageRef} | awk '{print $4}')
+        TAGGED_IMAGE_NAME="${destImageRef}:${IMAGE_SHA_DIGEST}"
+        buildah tag ${destImageRef} ${TAGGED_IMAGE_NAME}
+        buildah images
+        # buildah push --authfile "$authFilePath" --disable-compression --tls-verify=false ${TAGGED_IMAGE_NAME}
+        # Use your username and password
+        buildah push --creds=username:password --disable-compression --tls-verify=false ${TAGGED_IMAGE_NAME}
+        echo "Successfully pushed Image"
+        # Scraping Interval Period, Pod must stay alive
+        sleep 1m
+      securityContext:
+        runAsUser: 0
+        capabilities:
+          add:
+            - SETFCAP
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: pipelinerun-egress-
+spec:
+  pipelineSpec:
+    tasks:
+      - name: pull-and-push-image-task
+        taskRef:
+          name: pull-and-push-image
