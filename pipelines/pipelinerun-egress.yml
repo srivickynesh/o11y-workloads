@@ -1,6 +1,6 @@
 # Use Quayusername and Quaytoken instead of {username}:{password} to push images to quay
 # Update {Quay-Organization} in line 23 to respective Org.
-# oc create -f egress-pipelinerun.yml
+# oc create -f pipelinerun-egress.yml
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
