@@ -34,3 +34,9 @@ curl -X GET -kG "http://localhost:8080/api/v1/query" --data-urlencode 'query=las
 
 echo "Total Egress sumed up value "
 curl -X GET -kG $url --data-urlencode 'query=$query' | jq -r '.data.result[].value[1]' | awk '{s+=$1} END {print s}'
+
+# Calculate vcpu minutes
+oc get pods -n o11y-e2e-tenant -o json | jq '.items[] | .spec.containers[] | .resources' | grep -E 'limits:|cpu' | awk 'NR%2{printf "%s ",$0;next;}1'
+
+# calculate memory limit
+oc get pods -n o11y-e2e-tenant -o json | jq '.items[] | .spec.containers[] | .resources' | grep -E 'limits:|memory' | awk 'NR%2{printf "%s ",$0;next;}1'
