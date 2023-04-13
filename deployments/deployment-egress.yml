@@ -1,0 +1,64 @@
+# Update {Quay-Organization} in line 42 to respective Org.
+# Requires secret named o11y-tests-token, having dockerconfigjson encoded with base64
+# oc create -f deployment-egress.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quay-image-push-deployment
+  namespace: o11y-e2e-tenant
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: quay-image-push-deployment
+  template:
+    metadata:
+      labels:
+        app: quay-image-push-deployment
+    spec:
+      imagePullSecrets:
+        - name: o11y-tests-token
+      serviceAccountName: pipeline
+      containers:
+      - name: quay-image-push-container-deployment
+        image: quay.io/redhat-appstudio/buildah:v1.28
+        volumeMounts:
+        - name: docker-config
+          mountPath: /tekton/creds-secrets/o11y-tests-token/
+          readOnly: true
+        env:
+        - name: BUILDAH_FORMAT
+          value: oci
+        - name: STORAGE_DRIVER
+          value: vfs
+        command:
+        - /bin/sh
+        - -c
+        args:
+        - |
+          #!/bin/sh
+          # Specify the secret for dockerconfigjson or use username and token to push images to quay
+          authFilePath="/tekton/creds-secrets/o11y-tests-token/.dockerconfigjson"
+          destImageRef="quay.io/{QUAY_ORGANISATION}/o11y-workloads"
+          sed -i 's/^\s*short-name-mode\s*=\s*.*/short-name-mode = "disabled"/' /etc/containers/registries.conf
+          echo 'root:1:4294967294' | tee -a /etc/subuid >> /etc/subgid
+          # Pull Image
+          echo -e "FROM quay.io/libpod/alpine:latest\nRUN dd if=/dev/urandom of=/100mbfile bs=1M count=100" > Dockerfile
+          unshare -Ufp --keep-caps -r --map-users 1,1,65536 --map-groups 1,1,65536 -- buildah bud --tls-verify=false --no-cache -f ./Dockerfile -t "$destImageRef" .
+          IMAGE_SHA_DIGEST=$(buildah images --digests | grep ${destImageRef} | awk '{print $4}')
+          TAGGED_IMAGE_NAME="${destImageRef}:${IMAGE_SHA_DIGEST}"
+          buildah tag ${destImageRef} ${TAGGED_IMAGE_NAME}
+          buildah images
+          buildah push --authfile "$authFilePath" --disable-compression --tls-verify=false ${TAGGED_IMAGE_NAME}
+          echo "Successfully pushed Image"
+          # Keep the container running indefinitely to not to restart the pod, once task gets completed
+          while true; do
+            sleep 300
+          done
+        securityContext:
+          capabilities:
+            add: ["SETFCAP"]
+      volumes:
+      - name: docker-config
+        secret:
+          secretName: o11y-tests-token
