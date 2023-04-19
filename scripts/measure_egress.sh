@@ -41,4 +41,4 @@ oc get pods -n o11y-e2e-tenant -o json | jq '.items[] | .spec.containers[] | .re
 # calculate memory limit
 oc get pods -n o11y-e2e-tenant -o json | jq '.items[] | .spec.containers[] | .resources' | grep -E 'limits:|memory' | awk 'NR%2{printf "%s ",$0;next;}1'
 
-oc delete secret o11y-tests-token -n o11y-e2e-pipelineruns-tenant; oc delete secret o11y-tests-token -n o11y-e2e-deployments-tenant ; oc delete deployments deployment-vcpu deployment-egress -n o11y-e2e-deployments; oc project o11y-e2e-pipelineruns-tenant; declare -a arr=("tr" "pr" "pipeline" "task"); for i in "${arr[@]}"; do yes|tkn "$i" delete `tkn "$i" list | sed 1d | awk '{print $1}'`; done
+oc delete secret o11y-tests-token -n o11y-e2e-pipelineruns-tenant; oc delete secret o11y-tests-token -n o11y-e2e-deployments-tenant ; oc delete deployments deployment-vcpu deployment-egress -n o11y-e2e-deployments-tenant; oc project o11y-e2e-pipelineruns-tenant; declare -a arr=("tr" "pr" "pipeline" "task"); for i in "${arr[@]}"; do yes|tkn "$i" delete `tkn "$i" list | sed 1d | awk '{print $1}'`; done
